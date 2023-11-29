@@ -1,9 +1,10 @@
 ﻿//Using SDL and standard IO
 #include <SDL.h>
 #include <SDL_main.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 
-//Screen dimension constants
+//Screen size constants
 const int SCREEN_WIDTH = 1200;
 const int SCREEN_HEIGHT = 614;
 
@@ -13,9 +14,13 @@ bool init();
 //Loads media
 bool loadMedia();
 
+//Loads Test
+bool loadText();
+
 //Frees media and shuts down SDL
 void close();
 
+//Global variable declaration
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 
@@ -25,6 +30,15 @@ SDL_Surface* gScreenSurface = NULL;
 //The image we will load and show on the screen
 SDL_Surface* gHelloWorld = NULL;
 
+//The surface for the text
+SDL_Surface* gTextSurface = NULL;
+
+//The font we'll be using
+TTF_Font* gFont = NULL;
+
+//The color of the font
+SDL_Color textColor = { 255, 255, 255 };
+
 bool init()
 {
     //Initialization flag
@@ -33,7 +47,7 @@ bool init()
     //Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        printf("SDL could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
         success = false;
     }
     else
@@ -50,6 +64,12 @@ bool init()
             //Get window surface
             gScreenSurface = SDL_GetWindowSurface(gWindow);
         }
+    }
+
+    //Initialize SDL_ttf
+    if (TTF_Init() == -1)
+    {
+        printf("SDL_ttf could not initialized. SDL_ttf Error: %s\n", TTF_GetError());
     }
 
     return success;
@@ -72,13 +92,35 @@ bool loadMedia()
         // Resize the image to fit the window size
         gHelloWorld = SDL_ConvertSurface(gHelloWorld, gScreenSurface->format, 0);
 
-        //늘린 이미지 적용
+        //Streched image apply
         SDL_Rect stretchRect;
         stretchRect.x = 0;
         stretchRect.y = 0;
         stretchRect.w = SCREEN_WIDTH;
         stretchRect.h = SCREEN_HEIGHT;
         SDL_BlitScaled(gHelloWorld, NULL, gScreenSurface, &stretchRect);
+    }
+    return success;
+}
+
+bool loadText()
+{
+    bool success = true;
+
+    gFont = TTF_OpenFont("IntelOneMono.ttf", 25);
+    if (gFont == NULL)
+    {
+        printf("Failed to load Font. SDL_ttf Error: %s\n", TTF_GetError());
+        success = false;
+    }
+    else
+    {
+        gTextSurface = TTF_RenderText_Solid(gFont, " Press any key to start...", textColor);
+        if (gTextSurface == NULL)
+        {
+            printf("Unable to render text surface. SDL_ttf Error: %s\n", TTF_GetError());
+            success = false;
+        }
     }
     return success;
 }
@@ -113,11 +155,21 @@ int main(int argc, char* args[])
         }
         else
         {
-            //Update the surface
-            SDL_UpdateWindowSurface(gWindow);
+            if (!loadText())
+            {
+                printf("Failed to load text.");
+            }
+            else
+            {
+                //Apply the text
+                SDL_BlitSurface(gTextSurface, NULL, gScreenSurface, NULL);
 
-            //Hack to get window to stay up
-            SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
+                //Update the surface
+                SDL_UpdateWindowSurface(gWindow);
+
+                //Hack to get window to stay up
+                SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
+            }
         }
     }
 
@@ -126,69 +178,3 @@ int main(int argc, char* args[])
 
     return 0; 
 }
-
-
-//#include <stdio.h>
-//#include "SDL.h"
-//
-//#pragma comment(lib, "SDL2main.lib")
-//#pragma comment(lib, "SDL2.lib")
-//
-//SDL_Window* window;
-//SDL_Renderer* renderer;
-//
-//int SDL_main(int argc, char* argv[])
-//{
-//	printf("Start\n");
-//
-//	// Initialize SDL
-//	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-//		printf("Could not initialize SDL! (%s)\n", SDL_GetError());
-//		return -1;
-//	}
-//
-//	// Create window
-//	window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL);
-//	if (window == NULL) {
-//		printf("Could not create window! (%s)\n", SDL_GetError());
-//		return -1;
-//	}
-//
-//	// Create renderer
-//	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE);
-//	if (renderer == NULL) {
-//		printf("Could not create renderer! (%s)\n", SDL_GetError());
-//		return -1;
-//	}
-//
-//	// Clear renderer (white)
-//	SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-//	SDL_RenderClear(renderer);
-//
-//	// Draw rect (red)
-//	SDL_Rect r = { 50, 50, 100, 100 };
-//	SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-//	SDL_RenderDrawRect(renderer, &r);
-//
-//	// Update screen
-//	SDL_RenderPresent(renderer);
-//
-//	SDL_Event event;
-//	int done = 0;
-//
-//	while (!done) {
-//		SDL_PollEvent(&event);
-//
-//		if (event.type == SDL_QUIT) {
-//			done = 1;
-//		}
-//	}
-//
-//	SDL_DestroyRenderer(renderer);
-//	SDL_DestroyWindow(window);
-//	SDL_Quit();
-//
-//	printf("End\n");
-//
-//	return 0;
-//}

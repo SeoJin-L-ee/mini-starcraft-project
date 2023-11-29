@@ -5,8 +5,8 @@
 #include <stdio.h>
 
 //Screen size constants
-const int SCREEN_WIDTH = 1200;
-const int SCREEN_HEIGHT = 614;
+const int SCREEN_WIDTH = 1550;
+const int SCREEN_HEIGHT = 815;
 
 //Starts up SDL and creates window
 bool init();
@@ -81,7 +81,7 @@ bool loadMedia()
     bool success = true;
     
     //Load splash image
-    gHelloWorld = SDL_LoadBMP("usable_image/image.bmp");
+    gHelloWorld = SDL_LoadBMP("usable_image/start_2.bmp");
     if (gHelloWorld == NULL)
     {
         printf("Unable to load image %s! SDL Error: %s\n", "usable_image/image.bmp", SDL_GetError());

@@ -11,6 +11,8 @@ const int SCREEN_HEIGHT = 815;
 //Starts up SDL and creates window
 bool init();
 
+void stretchImageSize();
+
 //Loads media
 bool loadMedia();
 
@@ -20,7 +22,8 @@ bool loadText();
 //Frees media and shuts down SDL
 void close();
 
-//Global variable declaration
+
+
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 
@@ -28,7 +31,7 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 
 //The image we will load and show on the screen
-SDL_Surface* gHelloWorld = NULL;
+SDL_Surface* gimage = NULL;
 
 //The surface for the text
 SDL_Surface* gTextSurface = NULL;
@@ -39,6 +42,8 @@ TTF_Font* gFont = NULL;
 //The color of the font
 SDL_Color textColor = { 255, 255, 255 };
 
+
+
 bool init()
 {
     //Initialization flag
@@ -47,7 +52,7 @@ bool init()
     //Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        printf("SDL could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+        printf("SDL could not initialize. SDL_ttf Error: %s\n", TTF_GetError());
         success = false;
     }
     else
@@ -56,7 +61,7 @@ bool init()
         gWindow = SDL_CreateWindow("Want to go home...", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
         if (gWindow == NULL)
         {
-            printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+            printf("Window could not be created. SDL_Error: %s\n", SDL_GetError());
             success = false;
         }
         else
@@ -75,30 +80,34 @@ bool init()
     return success;
 }
 
+void stretchImageSize() {
+
+    //Streched image apply
+    SDL_Rect stretchedSize;
+    stretchedSize.x = 0;
+    stretchedSize.y = 0;
+    stretchedSize.w = SCREEN_WIDTH;
+    stretchedSize.h = SCREEN_HEIGHT;
+    SDL_BlitScaled(gimage, NULL, gScreenSurface, &stretchedSize);
+}
+
 bool loadMedia()
 {
     //Loading success flag
     bool success = true;
     
     //Load splash image
-    gHelloWorld = SDL_LoadBMP("usable_image/start_2.bmp");
-    if (gHelloWorld == NULL)
+    gimage = SDL_LoadBMP("usable_image/Start_2.bmp");
+    if (gimage == NULL)
     {
-        printf("Unable to load image %s! SDL Error: %s\n", "usable_image/image.bmp", SDL_GetError());
+        printf("Unable to load image %s. SDL Error: %s\n", "usable_image/image.bmp", SDL_GetError());
         success = false;
     }
     else
     {
         // Resize the image to fit the window size
-        gHelloWorld = SDL_ConvertSurface(gHelloWorld, gScreenSurface->format, 0);
-
-        //Streched image apply
-        SDL_Rect stretchRect;
-        stretchRect.x = 0;
-        stretchRect.y = 0;
-        stretchRect.w = SCREEN_WIDTH;
-        stretchRect.h = SCREEN_HEIGHT;
-        SDL_BlitScaled(gHelloWorld, NULL, gScreenSurface, &stretchRect);
+        gimage = SDL_ConvertSurface(gimage, gScreenSurface->format, 0);
+        stretchImageSize();
     }
     return success;
 }
@@ -121,6 +130,7 @@ bool loadText()
             printf("Unable to render text surface. SDL_ttf Error: %s\n", TTF_GetError());
             success = false;
         }
+        SDL_BlitSurface(gTextSurface, NULL, gScreenSurface, NULL);
     }
     return success;
 }
@@ -128,8 +138,8 @@ bool loadText()
 void close()
 {
     //Deallocate surface
-    SDL_FreeSurface(gHelloWorld);
-    gHelloWorld = NULL;
+    SDL_FreeSurface(gimage);
+    gimage = NULL;
 
     //Destroy window
     SDL_DestroyWindow(gWindow);
@@ -141,17 +151,15 @@ void close()
 
 int main(int argc, char* args[])
 {
-    //Start up SDL and create window
     if (!init())
     {
-        printf("Failed to initialize!\n");
+        printf("Failed to initialize.\n");
     }
     else
     {
-        //Load media
         if (!loadMedia())
         {
-            printf("Failed to load media!\n");
+            printf("Failed to load media.\n");
         }
         else
         {
@@ -161,20 +169,59 @@ int main(int argc, char* args[])
             }
             else
             {
-                //Apply the text
-                SDL_BlitSurface(gTextSurface, NULL, gScreenSurface, NULL);
-
-                //Update the surface
                 SDL_UpdateWindowSurface(gWindow);
 
-                //Hack to get window to stay up
-                SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
+                SDL_Event e;
+                bool quit = false;
+                Uint32 lastTime = 0;
+                int showInterval = 900; // visible period
+                int hideInterval = 600; // invisible period
+                bool showText = true;
+                int changed = 0; // to update the window only at the end of the period
+
+                while (!quit)
+                {
+                    //end case
+                    while (SDL_PollEvent(&e) != 0)
+                    {
+                        if (e.type == SDL_QUIT)
+                        {
+                            quit = true;
+                        }
+                    }
+
+                    Uint32 currentTime = SDL_GetTicks();
+
+
+                    if (currentTime - lastTime > (showText ? showInterval : hideInterval))
+                    {
+                        lastTime = currentTime;
+                        showText = !showText;
+                        changed = 1;
+                    }
+
+                    //when time is over && have to show text
+                    if((changed == 1) && showText)
+                    { 
+                        SDL_BlitSurface(gTextSurface, NULL, gScreenSurface, NULL);
+                        SDL_UpdateWindowSurface(gWindow);
+                        changed = 0;
+                    }
+                    //when time is over && have to hide text
+                    else if((changed == 1) && !showText)
+                    {
+                        stretchImageSize();
+                        SDL_UpdateWindowSurface(gWindow);
+                        changed = 0;
+                    }
+
+
+                }
             }
         }
     }
 
-    //Free resources and close SDL
     close();
 
-    return 0; 
+    return 0;
 }
